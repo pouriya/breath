@@ -129,6 +129,8 @@ check_arguments([Arg|Args], Count, Pos) ->
                     check_arguments(Args, Count+1, Pos);
                 {_, Arity} when erlang:is_integer(Arity) andalso Arity > 0 ->
                     check_arguments(Args, Count+1, Pos);
+                Arity when erlang:is_integer(Arity) andalso Arity > 0 ->
+                    check_arguments(Args, Count+1, Pos);
                 _ ->
                     maybe_error({erl_syntax:get_pos(Arg), ?MODULE, argument})
             end;
