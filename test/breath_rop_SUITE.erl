@@ -93,7 +93,10 @@ end_per_testcase(_TestCase, _Cfg) ->
     Src = <<
         "-module(breath_rop_).\n "
         "-compile({parse_transform, breath_rop}).\n "
-        "f() -> breath:rop(1, f2(_), ?MODULE:f3(_, 1, _)).\n "
+        "f() -> breath:rop(1\n "
+        "                 ,f2(_)\n "
+        "                 ,?MODULE:f3(_, 1, _)\n "
+        "                 ,(fun(X) -> f2(X) end)(_)).\n "
         "f2(Int) -> {ok, Int+1}.\n "
         "f3(Int1, Int2, Int1) -> {ok, Int1*2+Int2}.\n "
           >>,
@@ -102,7 +105,7 @@ end_per_testcase(_TestCase, _Cfg) ->
     File = filename:join([Dir, "breath_rop_.erl"]),
     ?assertMatch(ok, file:write_file(File, Src)),
     ?assertMatch({ok, _}, compile:file(File, [verbose, nowarn_export_all, export_all, {parse_transform, breath_rop}, return_errors, {outdir, Dir}])),
-    ?assertMatch({ok, 5}, breath_rop_:f()),
+    ?assertMatch({ok, 6}, breath_rop_:f()),
     _ = code:del_path(Dir),
     _ = code:purge(breath_rop_),
     true = code:delete(breath_rop_),
