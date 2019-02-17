@@ -29,8 +29,7 @@ parse_transform(AST, _) ->
 
 %% @hidden
 format_error(argument) ->
-    ["Each argument of 'rop' function must be a function call which accepts at "
-    "least one argument."];
+    ["Each argument of 'rop' function must be a function call."];
 
 format_error(arguments) ->
     ["'rop' function must has at least two arguments."].
@@ -49,17 +48,22 @@ transform_rop(Item) ->
     case erl_syntax:type(Item) of
         application ->
             case erl_syntax_lib:analyze_application(Item) of
-                {Mod, {rop, Arity}} when Mod == breath orelse
-                                         Mod == breath_rop ->
-                    if
-                        Arity > 1 ->
-                            transform_application(Item);
-                        true ->
-                            _ = maybe_error({erl_syntax:get_pos(Item)
-                                            ,?MODULE
-                                            ,arguments}),
-                            erl_syntax:revert(Item)
-                    end;
+                {breath, {rop, Arity}} when erlang:is_integer(Arity) andalso
+                                            Arity > 1 ->
+                    transform_application(Item);
+                {breath_rop, Arity} when erlang:is_integer(Arity) andalso
+                                         Arity > 1 ->
+                    transform_application(Item);
+                {X, Y} when (X == breath andalso
+                             erlang:element(1, Y) == rop
+                            ) orelse
+                            (X == breath_rop andalso
+                             erlang:is_integer(Y)
+                            ) ->
+                    _ = maybe_error({erl_syntax:get_pos(Item)
+                                    ,?MODULE
+                                    ,arguments}),
+                    erl_syntax:revert(Item);
                 _ ->
                     erl_syntax:revert(Item)
             end;
@@ -72,10 +76,9 @@ transform_rop(Item) ->
 
 transform_application(App) ->
     Args = erl_syntax:application_arguments(App),
-    case check_arguments(Args, 0, erl_syntax:get_pos(App)) of
+    case check_arguments(Args, erl_syntax:get_pos(App)) of
         ok ->
-            [Arg|Args2] = Args,
-            erl_syntax:revert(transform_applications_to_cases(Args2, Arg));
+            erl_syntax:revert(transform_applications_to_cases(Args, undefined));
         _ ->
             App
     end.
@@ -83,6 +86,7 @@ transform_application(App) ->
 
 transform_applications_to_cases([Arg], Value) ->
     transform_application(Arg, Value);
+
 transform_applications_to_cases([Arg|Args], Value) ->
     Ok = erl_syntax:copy_pos(Arg, erl_syntax:atom(ok)),
     OkResult = erl_syntax:copy_pos(Arg, random_variable("_Result_")),
@@ -99,16 +103,23 @@ transform_applications_to_cases([Arg|Args], Value) ->
                 [OkTuple],
                 none,
                 [transform_applications_to_cases(Args, OkResult)]
-                             ))
-            ,erl_syntax:copy_pos(
+            )
+         ),
+         erl_syntax:copy_pos(
             Arg,
             erl_syntax:clause([ErrTuple], none, [ErrTuple])
-                                )],
+         )
+        ],
+    Arg2 =
+        if
+            Value /= undefined ->
+                transform_application(Arg, Value);
+            true ->
+                Arg
+        end,
     erl_syntax:revert(
-        erl_syntax:copy_pos(
-            Arg,
-            erl_syntax:case_expr(transform_application(Arg, Value), Clauses))
-                     ).
+        erl_syntax:copy_pos(Arg, erl_syntax:case_expr(Arg2, Clauses))
+    ).
 
 
 random_variable(Pre) ->
@@ -117,27 +128,23 @@ random_variable(Pre) ->
     erl_syntax:variable(Pre ++ erlang:integer_to_list(Timestamp)).
 
 
-check_arguments([_|Args], 0, Pos) ->
-    check_arguments(Args, 1, Pos);
-
-check_arguments([Arg|Args], Count, Pos) ->
+check_arguments([Arg|Args], Pos) ->
     case erl_syntax:type(Arg) of
         application ->
             case erl_syntax_lib:analyze_application(Arg) of
-                {_, {_, Arity}} when erlang:is_integer(Arity) andalso
-                    Arity > 0 ->
-                    check_arguments(Args, Count+1, Pos);
-                {_, Arity} when erlang:is_integer(Arity) andalso Arity > 0 ->
-                    check_arguments(Args, Count+1, Pos);
-                Arity when erlang:is_integer(Arity) andalso Arity > 0 ->
-                    check_arguments(Args, Count+1, Pos);
+                {_, {_, Arity}} when erlang:is_integer(Arity) ->
+                    check_arguments(Args, Pos);
+                {_, Arity} when erlang:is_integer(Arity) ->
+                    check_arguments(Args, Pos);
+                Arity when erlang:is_integer(Arity) ->
+                    check_arguments(Args, Pos);
                 _ ->
                     maybe_error({erl_syntax:get_pos(Arg), ?MODULE, argument})
             end;
         _ ->
             maybe_error({erl_syntax:get_pos(Arg), ?MODULE, argument})
     end;
-check_arguments(_, _, _) ->
+check_arguments(_, _) ->
     ok.
 
 
