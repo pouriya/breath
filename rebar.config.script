@@ -1,0 +1,80 @@
+NameUpper = string:to_upper("breath").
+
+BuildType = 
+    case os:getenv(NameUpper ++ "_BUILD") of
+        false ->
+            default;
+        BuildTypeX ->
+            erlang:list_to_atom(string:to_lower(BuildTypeX))
+    end.
+
+
+Version =
+    case os:getenv(NameUpper ++ "_VERSION") of
+        false ->
+            "0.0.0";
+        VersionX ->
+            VersionX
+    end.
+
+
+Release =
+    fun() ->
+        {_, {_, RelXOpts}, Cfg2} = lists:keytake(relx, 1, CONFIG),
+        [{relx, [{release, {breath, Version}, [{sasl, load}, breath]} | RelXOpts]} | Cfg2]
+    end.
+
+
+Dialyzer =
+    fun() ->
+        CONFIG
+    end.
+
+
+Test = 
+    fun() ->
+        CONFIG
+    end.
+
+
+Docs = 
+    fun() ->
+        CONFIG
+    end.
+
+
+Shell = 
+    fun() ->
+        CONFIG
+    end.
+
+
+Default = 
+    fun() ->
+        CONFIG
+    end.
+
+
+Cfg =
+    []
+    ++
+    case BuildType of
+        release ->
+            Release();
+        dialyzer ->
+            Dialyzer();
+        test ->
+            Test();
+        docs ->
+            Docs();
+        shell -> 
+            Shell();
+        _ -> % default: Used as dependency
+            Default()
+    end
+    ++
+    [].
+
+%io:format("~p\n", [Cfg]).
+
+Cfg.
