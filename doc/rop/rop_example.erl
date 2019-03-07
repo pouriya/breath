@@ -12,7 +12,8 @@ test(Arg) ->
         task_3(_, 10),
         task_4(_, 2, _),
         ?MODULE:task_5(_),
-        (fun(X) -> task_6(X) end)(_)
+        (fun(X) -> task_6(X) end)(_) % last function is transformer and does not
+                                     % need to yeild {ok, _} or {error, _}
     ).
 %% Above code can be written like:
 %%test(Arg) ->
@@ -70,3 +71,32 @@ task_5(Int) ->
 
 task_6(Float) ->
     io:format("Number: ~p~n", [Float]).
+
+
+bad_return_test() ->
+    breath_rop(
+        (fun() -> oops end)(), % yields 'oops' instead of {ok, _} or {error, _}
+        task_6(_)
+    ).
+
+
+crash_test_1(Arg) ->
+    breath_rop(
+        (fun(X) -> io:format("will be crashed with reason ~p\n", [X]), {ok, X} end)(Arg),
+        (fun(X) -> erlang:exit(X) end)(_)
+    ).
+
+
+crash_test_2() ->
+    breath_rop(
+        (fun() -> {ok, nomatch} end)(), % 'nomatch' will be passed to next call
+        (fun(match) -> ok end)(_)
+    ).
+
+
+%%compile_test_1(Arg) ->
+%%    breath_rop(task_1(Arg)). % just one argument
+
+
+%%compile_test_2(Arg) ->
+%%    breath_rop(task_1(Arg), foo).
