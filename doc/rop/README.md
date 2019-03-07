@@ -1,5 +1,5 @@
 # ROP (Railway Oriented Programming)
-**ROP** is a model from functional programming world. Each function which want to be used in **ROP**, Should yield `{ok, Result::any()}`(success rail) or `{error, Reason::any()}` (failure rail).  
+**ROP** is a functional programming approach to error handling. Each function which want to be used in **ROP**, Should yield `{ok, Result::any()}`(success rail) or `{error, Reason::any()}` (failure rail).  
 Imagine we have 3 functions `f1`, `f2` and `f3`:  
 ```txt
 
