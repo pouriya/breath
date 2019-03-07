@@ -29,10 +29,10 @@ parse_transform(AST, _) ->
 
 %% @hidden
 format_error(argument) ->
-    ["Each argument of 'rop' function must be a function call."];
+    ["Each argument of a ROP function must be a function call."];
 
 format_error(arguments) ->
-    ["'rop' function must has at least two arguments."].
+    ["A ROP function must has at least two arguments."].
 
 %% -----------------------------------------------------------------------------
 %% Internals:

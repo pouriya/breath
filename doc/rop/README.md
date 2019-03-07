@@ -79,18 +79,18 @@ will be crashed with reason omg
 ** exception error: no function clause matching rop_example:'-crash_test_2/0-fun-1-'(nomatch) (rop_example.erl, line 93)
 ```
 
-What if you passed just one argument to `breath_rop/2-256` ro `breath:rop/2-256`?  
+What if you passed just one argument to a ROP function?  
 To test it, uncomment `compile_test_1` function in `rop_example.erl` file and recompile:  
 ```erlang
 8> c(rop_example).
-rop_example.erl:98: 'rop' function must has at least two arguments.
+rop_example.erl:98: A ROP function must has at least two arguments.
 error
 ```
 
-What if you passed for example atom `'foo'` to `breath_rop/2-256` or `breath:rop/2-256` instead of a function call?  
+What if you passed for example atom `'foo'` to A ROP function instead of a function call?  
 To test it, uncomment `compile_test_2` function in `rop_example.erl` file and recompile:  
 ```erlang
 9> c(rop_example).
-rop_example.erl:102: Each argument of 'rop' function must be a function call.
+rop_example.erl:102: Each argument of a ROP function must be a function call.
 error
 ```
