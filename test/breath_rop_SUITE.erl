@@ -28,6 +28,12 @@
 -include_lib("common_test/include/ct.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
+-ifdef(NEW_TRY_SYNTAX).
+    -define(catch_clause(X, Y, Z), X:Y:Z ->).
+-else.
+    -define(catch_clause(X, Y, Z), X:Y -> Z = erlang:get_stacktrace(),).
+-endif.
+
 %% -----------------------------------------------------------------------------
 %% ct callbacks:
 
@@ -255,7 +261,7 @@ end_per_testcase(_TestCase, _Cfg) ->
         try
             breath_rop_:f(1)
         catch
-            _:{case_clause, ok}:Stacktrace ->
+            ?catch_clause(_, {case_clause, ok}, Stacktrace)
                 ?assertMatch([{breath_rop_, f, 1, [_, {line, 5}]}|_], Stacktrace)
         end,
 
@@ -264,7 +270,7 @@ end_per_testcase(_TestCase, _Cfg) ->
         try
             breath_rop_:f(2)
         catch
-            _:function_clause:Stacktrace2 ->
+            ?catch_clause(_, function_clause, Stacktrace2)
                 ?assertMatch([{breath_rop_, f2, [2], [_, {line, 8}]}|_], Stacktrace2)
         end,
 
