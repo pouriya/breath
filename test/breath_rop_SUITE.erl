@@ -28,6 +28,12 @@
 -include_lib("common_test/include/ct.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
+-ifdef(NEW_TRY_SYNTAX).
+    -define(catch_clause(X, Y, Z), X:Y:Z ->).
+-else.
+    -define(catch_clause(X, Y, Z), X:Y -> Z = erlang:get_stacktrace(),).
+-endif.
+
 %% -----------------------------------------------------------------------------
 %% ct callbacks:
 
@@ -73,15 +79,16 @@ end_per_testcase(_TestCase, _Cfg) ->
     Src = <<
         "-module(breath_rop_).\n "
         "-compile({parse_transform, breath_rop}).\n "
-        "f() -> breath:rop(1, f2(_)).\n "
-        "f2(Int) -> {ok, Int+1}.\n "
+        "f() -> breath:rop(f2(1)\n"
+        "                 ,f2(_)).\n "
+        "f2(Int) -> ct:pal(\"~p\", [Int]), {ok, Int+1}.\n "
           >>,
     Dir = ?config(data_dir, Cfg),
     _ = code:add_patha(Dir),
     File = filename:join([Dir, "breath_rop_.erl"]),
     ?assertMatch(ok, file:write_file(File, Src)),
     ?assertMatch({ok, _}, compile:file(File, [verbose, nowarn_export_all, export_all, {parse_transform, breath_rop}, return_errors, {outdir, Dir}])),
-    ?assertMatch({ok, 2}, breath_rop_:f()),
+    ?assertMatch({ok, 3}, breath_rop_:f()),
     _ = code:del_path(Dir),
     _ = code:purge(breath_rop_),
     true = code:delete(breath_rop_),
@@ -93,7 +100,12 @@ end_per_testcase(_TestCase, _Cfg) ->
     Src = <<
         "-module(breath_rop_).\n "
         "-compile({parse_transform, breath_rop}).\n "
-        "f() -> breath:rop(1, f2(_), ?MODULE:f3(_, 1, _)).\n "
+        "test() -> breath:rop(f2(1)\n "
+        "                    ,?MODULE:f3(_, 1, _)\n "
+        "                    ,(fun(X) -> f2(X) end)(_)).\n "
+        "test2() -> breath_rop(f2(1)\n "
+        "                     ,?MODULE:f3(_, 1, _)\n "
+        "                     ,(fun(X) -> f2(X) end)(_)).\n "
         "f2(Int) -> {ok, Int+1}.\n "
         "f3(Int1, Int2, Int1) -> {ok, Int1*2+Int2}.\n "
           >>,
@@ -102,7 +114,8 @@ end_per_testcase(_TestCase, _Cfg) ->
     File = filename:join([Dir, "breath_rop_.erl"]),
     ?assertMatch(ok, file:write_file(File, Src)),
     ?assertMatch({ok, _}, compile:file(File, [verbose, nowarn_export_all, export_all, {parse_transform, breath_rop}, return_errors, {outdir, Dir}])),
-    ?assertMatch({ok, 5}, breath_rop_:f()),
+    ?assertMatch({ok, 6}, breath_rop_:test()),
+    ?assertMatch({ok, 6}, breath_rop_:test2()),
     _ = code:del_path(Dir),
     _ = code:purge(breath_rop_),
     true = code:delete(breath_rop_),
@@ -164,7 +177,7 @@ end_per_testcase(_TestCase, _Cfg) ->
     _ = code:add_patha(Dir),
     File = filename:join([Dir, "breath_rop_.erl"]),
     ?assertMatch(ok, file:write_file(File, Src)),
-    ?assertMatch({error, [{_, [{4,breath_rop,argument}]}], _}, compile:file(File, [verbose, nowarn_export_all, export_all, {parse_transform, breath_rop}, return_errors, {outdir, Dir}])),
+    ?assertMatch({error, [{_, [{3,breath_rop,argument}]}], _}, compile:file(File, [verbose, nowarn_export_all, export_all, {parse_transform, breath_rop}, return_errors, {outdir, Dir}])),
     _ = code:del_path(Dir),
     _ = code:purge(breath_rop_),
     _ = file:delete(File),
@@ -178,8 +191,7 @@ end_per_testcase(_TestCase, _Cfg) ->
     Src = <<
         "-module(breath_rop_).\n "
         "-compile({parse_transform, breath_rop}).\n "
-        "f() -> breath:rop(1
-                          ,breath:rop(1,1,1)
+        "f() -> breath:rop(breath:rop()
                           ,1
                           ,foo).\n "
           >>,
@@ -187,7 +199,7 @@ end_per_testcase(_TestCase, _Cfg) ->
     _ = code:add_patha(Dir),
     File = filename:join([Dir, "breath_rop_.erl"]),
     ?assertMatch(ok, file:write_file(File, Src)),
-    ?assertMatch({error, [{_, [{4,breath_rop,argument}]}], _}, compile:file(File, [verbose, nowarn_export_all, export_all, {parse_transform, breath_rop}, return_errors, {outdir, Dir}])),
+    ?assertMatch({error, [{_, [{3,breath_rop,arguments}]}], _}, compile:file(File, [verbose, nowarn_export_all, export_all, {parse_transform, breath_rop}, return_errors, {outdir, Dir}])),
     _ = code:del_path(Dir),
     _ = code:purge(breath_rop_),
     _ = file:delete(File),
@@ -202,9 +214,9 @@ end_per_testcase(_TestCase, _Cfg) ->
         "-module(breath_rop_).\n "
         "-compile({parse_transform, breath_rop}).\n "
         "f(Int) -> \n "
-        "    case breath:rop(Int, f2(_)) of\n"
+        "    case breath:rop((fun() -> {ok, Int} end)(), f2(_)) of\n"
         "        {ok, 2} ->\n "
-        "            breath:rop(2, f3(_));\n "
+        "            breath:rop((fun() -> {ok, 2} end)(), f3(_));\n "
         "        {error, _}=Err ->\n "
         "            Err\n "
         "    end.\n "
@@ -234,8 +246,7 @@ end_per_testcase(_TestCase, _Cfg) ->
         "-compile({parse_transform, breath_rop}).\n "
         "f(Int) -> \n "
         "    breath:rop(\n"
-        "               Int\n "
-        "              ,f2(_)\n "
+        "               f2(Int)\n "
         "              ,f2(_)\n "
         "              ).\n "
         "f2(1) -> ok.\n "
@@ -250,8 +261,8 @@ end_per_testcase(_TestCase, _Cfg) ->
         try
             breath_rop_:f(1)
         catch
-            _:{case_clause, ok}:Stacktrace ->
-                ?assertMatch([{breath_rop_, f, 1, [_, {line, 6}]}|_], Stacktrace)
+            ?catch_clause(_, {case_clause, ok}, Stacktrace)
+                ?assertMatch([{breath_rop_, f, 1, [_, {line, 5}]}|_], Stacktrace)
         end,
 
     ?assertError(function_clause, breath_rop_:f(2)),
@@ -259,8 +270,8 @@ end_per_testcase(_TestCase, _Cfg) ->
         try
             breath_rop_:f(2)
         catch
-            _:function_clause:Stacktrace2 ->
-                ?assertMatch([{breath_rop_, f2, [2], [_, {line, 9}]}|_], Stacktrace2)
+            ?catch_clause(_, function_clause, Stacktrace2)
+                ?assertMatch([{breath_rop_, f2, [2], [_, {line, 8}]}|_], Stacktrace2)
         end,
 
     _ = code:del_path(Dir),
