@@ -1,6 +1,6 @@
 {application
 ,breath
-,[{description, "An OTP library"}
+,[{description, "Brought a breath of fresh air to the Erlang coding."}
  ,{vsn, "0.1.0"}
  ,{applications, [kernel, stdlib]}
  ,{modules, [breath]}
