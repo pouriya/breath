@@ -37,10 +37,10 @@ Using **ROP** we can connect above functions as follows:
 ```
 
 # Example
-See `rop_example.erl` file to know how it works in `Breath` Erlang library.  
+See `rop_example.erl` file to know how does it work.
 ```sh
 ~/breath $ cd doc/rop
-~/breath/doc/rop $ make
+~/breath/doc/rop $ make shell
 ```
 ```erlang
 erl -pa ../../_build/default/lib/breath/ebin
@@ -80,7 +80,7 @@ will be crashed with reason omg
 ```
 
 What if you passed just one argument to a ROP function?  
-To test it, uncomment `compile_test_1` function in `rop_example.erl` file and recompile:  
+To test it, uncomment `compile_test_1` function in `rop_example.erl` file and recompile it:  
 ```erlang
 8> c(rop_example).
 rop_example.erl:98: A ROP function must has at least two arguments.
@@ -88,7 +88,7 @@ error
 ```
 
 What if you passed for example atom `'foo'` to A ROP function instead of a function call?  
-To test it, uncomment `compile_test_2` function in `rop_example.erl` file and recompile:  
+To test it, uncomment `compile_test_2` function in `rop_example.erl` file and recompile it:  
 ```erlang
 9> c(rop_example).
 rop_example.erl:102: Each argument of a ROP function must be a function call.

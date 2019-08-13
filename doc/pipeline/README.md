@@ -17,7 +17,7 @@ It simply uses Arg as initialized value and passes it as last parameter of next 
 
 
 # Example
-See `pipeline_example.erl` file to see how it works with `Breath` Erlang library.  
+See `pipeline_example.erl` file to know how does it work.  
 ```sh
 ~/breath $ cd doc/pipeline
 ~/breath/doc/pipeline $ make shell
