@@ -29,6 +29,17 @@
 -include_lib("common_test/include/ct.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
+-ifdef(OTP_RELEASE).
+    -define(
+        define_stacktrace(Type, Reason, Stacktrace),
+        Type:Reason:Stacktrace
+    ).
+    -define(get_stacktrace(Stacktrace), Stacktrace).
+-else.
+    -define(define_stacktrace(Type, Reason, Stacktrace), Type:Reason).
+    -define(get_stacktrace(Stacktrace), erlang:get_stacktrace()).
+-endif.
+
 %% -----------------------------------------------------------------------------
 %% ct callbacks:
 
@@ -94,7 +105,7 @@ end_per_testcase(_TestCase, _Cfg) ->
     Src = <<
         "-module(breath_pipeline_).\n "
         "-compile({parse_transform, breath_pipeline}).\n "
-        "f() -> breath:pipeline(1, f2(_), ?MODULE:f3(5, 1, _)).\n "
+        "f() -> breath_pipeline(1, f2(_), ?MODULE:f3(5, 1, _)).\n "
         "f2(Int) -> Int+1.\n "
         "f3(Int1, Int2, Int3) -> Int1*2+Int2+Int3.\n "
           >>,
@@ -255,8 +266,8 @@ end_per_testcase(_TestCase, _Cfg) ->
         try
             breath_pipeline_:f(2)
         catch
-            _:function_clause:Stacktrace ->
-                ?assertMatch([{breath_pipeline_, f2, [2], [_, {line, 9}]}|_], Stacktrace)
+            ?define_stacktrace(_, function_clause, Stacktrace) ->
+                ?assertMatch([{breath_pipeline_, f2, [2], [_, {line, 9}]}|_], ?get_stacktrace(Stacktrace))
         end,
 
     ?assertError(function_clause, breath_pipeline_:f(2)),
@@ -264,8 +275,8 @@ end_per_testcase(_TestCase, _Cfg) ->
         try
             breath_pipeline_:f(2)
         catch
-            _:function_clause:Stacktrace2 ->
-                ?assertMatch([{breath_pipeline_, f2, [2], [_, {line, 9}]}|_], Stacktrace2)
+            ?define_stacktrace(_, function_clause, Stacktrace2) ->
+                ?assertMatch([{breath_pipeline_, f2, [2], [_, {line, 9}]}|_], ?get_stacktrace(Stacktrace2))
         end,
 
     _ = code:del_path(Dir),

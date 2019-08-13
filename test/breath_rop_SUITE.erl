@@ -28,10 +28,15 @@
 -include_lib("common_test/include/ct.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
--ifdef(NEW_TRY_SYNTAX).
-    -define(catch_clause(X, Y, Z), X:Y:Z ->).
+-ifdef(OTP_RELEASE).
+    -define(
+        define_stacktrace(Type, Reason, Stacktrace),
+        Type:Reason:Stacktrace
+    ).
+    -define(get_stacktrace(Stacktrace), Stacktrace).
 -else.
-    -define(catch_clause(X, Y, Z), X:Y -> Z = erlang:get_stacktrace(),).
+    -define(define_stacktrace(Type, Reason, Stacktrace), Type:Reason).
+    -define(get_stacktrace(Stacktrace), erlang:get_stacktrace()).
 -endif.
 
 %% -----------------------------------------------------------------------------
@@ -261,8 +266,8 @@ end_per_testcase(_TestCase, _Cfg) ->
         try
             breath_rop_:f(1)
         catch
-            ?catch_clause(_, {case_clause, ok}, Stacktrace)
-                ?assertMatch([{breath_rop_, f, 1, [_, {line, 5}]}|_], Stacktrace)
+            ?define_stacktrace(_, {case_clause, ok}, Stacktrace) ->
+                ?assertMatch([{breath_rop_, f, 1, [_, {line, 5}]}|_], ?get_stacktrace(Stacktrace))
         end,
 
     ?assertError(function_clause, breath_rop_:f(2)),
@@ -270,8 +275,8 @@ end_per_testcase(_TestCase, _Cfg) ->
         try
             breath_rop_:f(2)
         catch
-            ?catch_clause(_, function_clause, Stacktrace2)
-                ?assertMatch([{breath_rop_, f2, [2], [_, {line, 8}]}|_], Stacktrace2)
+            ?define_stacktrace(_, function_clause, Stacktrace2) ->
+                ?assertMatch([{breath_rop_, f2, [2], [_, {line, 8}]}|_], ?get_stacktrace(Stacktrace2))
         end,
 
     _ = code:del_path(Dir),
