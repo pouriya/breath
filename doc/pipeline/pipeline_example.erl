@@ -47,19 +47,19 @@ crash_test(Reason) ->
     ).
 
 
-compile_test_1() ->
-    breath:pipeline(task_1()).
-
-
-
-compile_test_2() ->
-    breath:pipeline(
-        init_argument, 
-        bad_function_call
-    ).
-
-compile_test_3() ->
-    breath:pipeline(
-        init_argument, 
-        task_3(_, 2, _)
-    ).
+%%compile_test_1() ->
+%%    breath:pipeline(task_1()).
+%%
+%%
+%%
+%%compile_test_2() ->
+%%    breath:pipeline(
+%%        init_argument,
+%%        bad_function_call
+%%    ).
+%%
+%%compile_test_3() ->
+%%    breath:pipeline(
+%%        init_argument,
+%%        task_3(_, 2, _)
+%%    ).
