@@ -6,7 +6,7 @@
 
 
 test(Int) ->
-    breath:pipeline(       % Also we can use breath_pipeline:do
+    breath:pipeline(       % Also we can use breath_pipeline(...)
         Int,
         task_1(),          % task_1(Int)
         task_2(_, Int),    % task_2(task_1(Int), Int)
