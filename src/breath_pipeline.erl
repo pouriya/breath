@@ -31,14 +31,14 @@ parse_transform(AST, _) ->
 format_error(argument) ->
     [
         "Except first argument, every argument of 'pipeline' must be a function"
-        " call"
+        " call."
     ];
 
 format_error(arguments) ->
     ["'pipeline' function must has at least two arguments."];
 
 format_error(underscore) ->
-    ["Every 'pipeline' function can contain only one underscore."].
+    ["Every 'pipeline' function call can contain only one underscore."].
 
 %% -----------------------------------------------------------------------------
 %% Internals:
@@ -62,6 +62,16 @@ transform_rop(Item) ->
                                               Mod == breath_pipeline andalso
                                               Func == do
                                           ) ->
+                    if
+                        Arity > 1 ->
+                            transform_application(Item);
+                        true ->
+                            _ = maybe_error({erl_syntax:get_pos(Item)
+                                            ,?MODULE
+                                            ,arguments}),
+                            erl_syntax:revert(Item)
+                    end;
+                {breath_pipeline, Arity} ->
                     if
                         Arity > 1 ->
                             transform_application(Item);
